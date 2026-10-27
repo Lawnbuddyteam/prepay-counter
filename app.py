@@ -10,7 +10,7 @@ import os
 # --- 1. PAGE CONFIGURATION ---
 st.set_page_config(layout="wide", page_title="Prepay Dashboard", initial_sidebar_state="collapsed")
 
-SHEET_NAME = "Prepay Customers" # Update this to your actual spreadsheet name if different
+SHEET_NAME = "Prepay Customers"
 GCP_CREDS = os.environ.get('gcp_service_account') or os.environ.get('GCP_SERVICE_ACCOUNT')
 
 # --- 2. IPAD-OPTIMIZED CSS ---
@@ -58,7 +58,7 @@ def get_gspread_client():
 
 def fetch_daily_prepays(client):
     try:
-        sheet = client.open(SHEET_NAME).sheet1
+        sheet = client.open(SHEET_NAME).worksheet("2027")
         raw_data = sheet.get_all_values()
         if len(raw_data) < 3: 
             return []
