@@ -15,7 +15,7 @@ REVENUE_GOAL = 80000.0
 
 GCP_CREDS = st.secrets.get("GCP_SERVICE_ACCOUNT")
 
-# --- 2. IPAD-OPTIMIZED CSS (MASSIVE TEXT) ---
+# --- 2. IPAD-OPTIMIZED CSS ---
 st.markdown("""
     <style>
         /* Force Black Background */
@@ -31,16 +31,11 @@ st.markdown("""
         header {visibility: hidden;}
         footer {visibility: hidden;}
         
-        /* Massive Text Typography */
-        .metric-title { font-size: 3.5vw; text-align: center; color: #5D9CEC; font-weight: bold; margin-bottom: -2vw; }
-        .metric-value { font-size: 12vw; text-align: center; color: white; font-weight: 900; margin: 0; line-height: 1.1; }
-        .goal-text { font-size: 2.5vw; text-align: center; color: #39FF14; margin-top: 1vw; font-weight: bold;}
-        
         /* Progress Bar Neon Color */
         .stProgress > div > div > div > div {
             background-color: #39FF14;
             box-shadow: 0 0 15px #39FF14;
-            height: 25px;
+            height: 30px;
             border-radius: 10px;
         }
         
@@ -52,8 +47,6 @@ st.markdown("""
             margin-bottom: 1vw;
             border-left: 4px solid #39FF14;
         }
-        .client-name { font-size: 1.5vw; color: white; font-weight: bold; margin: 0;}
-        .client-amount { font-size: 1.5vw; color: #39FF14; margin: 0;}
     </style>
 """, unsafe_allow_html=True)
 
@@ -147,22 +140,25 @@ def render_dashboard():
     total_count = len(records)
     total_revenue = sum(r["Amount"] for r in records)
     
-    # --- METRICS & PROGRESS BARS ---
+    # --- MASSIVE TEXT METRICS (INLINE CSS) ---
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown('<p class="metric-title">TOTAL DAILY COUNT</p>', unsafe_allow_html=True)
-        st.markdown(f'<p class="metric-value">{total_count}</p>', unsafe_allow_html=True)
+        st.markdown('<p style="font-size:3.5vw; text-align:center; color:#5D9CEC; font-weight:bold; margin-bottom: 0;">TOTAL DAILY COUNT</p>', unsafe_allow_html=True)
+        st.markdown(f'<p style="font-size:12vw; text-align:center; color:white; font-weight:900; line-height:1.0; margin: 0;">{total_count}</p>', unsafe_allow_html=True)
+        
         progress_count = min(total_count / COUNT_GOAL, 1.0)
         st.progress(progress_count)
-        st.markdown(f'<p class="goal-text">Goal Progress: {total_count} / {COUNT_GOAL}</p>', unsafe_allow_html=True)
+        st.markdown(f"<p style='text-align:center; color:#39FF14; font-size:2vw; font-weight:bold; margin-top: 1vw;'>Goal Progress: {total_count} / {COUNT_GOAL}</p>", unsafe_allow_html=True)
         
     with col2:
-        st.markdown('<p class="metric-title">TOTAL DAILY REVENUE</p>', unsafe_allow_html=True)
-        st.markdown(f'<p class="metric-value">${total_revenue:,.0f}</p>', unsafe_allow_html=True)
+        st.markdown('<p style="font-size:3.5vw; text-align:center; color:#5D9CEC; font-weight:bold; margin-bottom: 0;">TOTAL DAILY REVENUE</p>', unsafe_allow_html=True)
+        # Note: Revenue font is slightly smaller (10vw) so massive dollar amounts don't line-break
+        st.markdown(f'<p style="font-size:10vw; text-align:center; color:white; font-weight:900; line-height:1.2; margin: 0;">${total_revenue:,.0f}</p>', unsafe_allow_html=True)
+        
         progress_rev = min(total_revenue / REVENUE_GOAL, 1.0)
         st.progress(progress_rev)
-        st.markdown(f'<p class="goal-text">Goal Progress: ${total_revenue:,.0f} / ${REVENUE_GOAL:,.0f}</p>', unsafe_allow_html=True)
+        st.markdown(f"<p style='text-align:center; color:#39FF14; font-size:2vw; font-weight:bold; margin-top: 1vw;'>Goal Progress: ${total_revenue:,.0f} / ${REVENUE_GOAL:,.0f}</p>", unsafe_allow_html=True)
         
     sync_time = datetime.now(ZoneInfo("America/New_York")).strftime('%I:%M %p')
     st.markdown(f'<p style="text-align:center; color:#888888; font-size:1.5vw; margin-top: 2vw;">Last Update: {sync_time} EST</p>', unsafe_allow_html=True)
@@ -179,11 +175,11 @@ def render_dashboard():
             with target_col:
                 st.markdown(f"""
                     <div class="client-card">
-                        <p class="client-name">{record['Name']}</p>
-                        <p class="client-amount">{display_amt}</p>
+                        <p style="font-size: 1.5vw; color: white; font-weight: bold; margin: 0;">{record['Name']}</p>
+                        <p style="font-size: 1.5vw; color: #39FF14; margin: 0;">{display_amt}</p>
                     </div>
                 """, unsafe_allow_html=True)
     else:
-        st.markdown("<h3 style='text-align: center; color: #888; font-size: 2vw;'>No prepays logged for today yet.</h3>", unsafe_allow_html=True)
+        st.markdown("<h3 style='text-align: center; color: #888; font-size: 2.5vw;'>No prepays logged for today yet.</h3>", unsafe_allow_html=True)
 
 render_dashboard()
