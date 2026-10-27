@@ -12,6 +12,7 @@ st.set_page_config(layout="wide", page_title="Prepay Dashboard", initial_sidebar
 SHEET_NAME = "Prepay Customers" 
 COUNT_GOAL = 91
 REVENUE_GOAL = 80000.0
+SEASON_GOAL = 2000000.0
 
 GCP_CREDS = st.secrets.get("GCP_SERVICE_ACCOUNT")
 
@@ -71,12 +72,12 @@ def get_gspread_client():
         st.error(f"Auth Error: {e}")
         return None
 
-def fetch_daily_prepays(client):
+def fetch_prepays_data(client):
     try:
         sheet = client.open(SHEET_NAME).worksheet("2027")
         raw_data = sheet.get_all_values()
         if len(raw_data) < 3: 
-            return []
+            return [], 0.0
 
         now_est = datetime.now(ZoneInfo("America/New_York"))
         if now_est.hour < 5:
@@ -86,6 +87,7 @@ def fetch_daily_prepays(client):
 
         dates_row = raw_data[0]
         daily_records = []
+        total_season_revenue = 0.0
         current_date_in_loop = None
         
         for col_idx in range(0, len(dates_row), 2):
@@ -97,32 +99,37 @@ def fetch_daily_prepays(client):
             try:
                 col_date = pd.to_datetime(current_date_in_loop).date()
             except:
-                continue
+                col_date = None
                 
-            if col_date == report_date:
-                for row_idx in range(2, len(raw_data)):
-                    row = raw_data[row_idx]
-                    
-                    name = row[col_idx].strip() if col_idx < len(row) else ""
-                    amount_str = row[col_idx+1].strip() if col_idx+1 < len(row) else ""
-                    
-                    if name:
-                        clean_amount = amount_str.replace('$', '').replace(',', '').strip()
-                        try:
-                            amt_float = float(clean_amount)
-                        except ValueError:
-                            amt_float = 0.0
-                            
+            # Scan through rows to collect both daily and seasonal totals
+            for row_idx in range(2, len(raw_data)):
+                row = raw_data[row_idx]
+                
+                name = row[col_idx].strip() if col_idx < len(row) else ""
+                amount_str = row[col_idx+1].strip() if col_idx+1 < len(row) else ""
+                
+                if name:
+                    clean_amount = amount_str.replace('$', '').replace(',', '').strip()
+                    try:
+                        amt_float = float(clean_amount)
+                    except ValueError:
+                        amt_float = 0.0
+                        
+                    # Add to seasonal total unconditionally
+                    total_season_revenue += amt_float
+                        
+                    # Add to daily display only if it matches today's date
+                    if col_date == report_date:
                         daily_records.append({
                             "Name": name, 
                             "Amount": amt_float, 
                             "AmountStr": amount_str
                         })
                         
-        return daily_records
+        return daily_records, total_season_revenue
     except Exception as e:
         st.error(f"Data Fetch Error: {e}")
-        return []
+        return [], 0.0
 
 # --- 4. LIVE DASHBOARD RENDERING ---
 now_est = datetime.now(ZoneInfo("America/New_York"))
@@ -135,12 +142,12 @@ def render_dashboard():
         st.warning("⚠️ Waiting for Google Sheets connection...")
         return
 
-    records = fetch_daily_prepays(client)
+    records, total_season_revenue = fetch_prepays_data(client)
     
     total_count = len(records)
-    total_revenue = sum(r["Amount"] for r in records)
+    total_daily_revenue = sum(r["Amount"] for r in records)
     
-    # --- MASSIVE TEXT METRICS (INLINE CSS) ---
+    # --- TOP ROW: DAILY METRICS ---
     col1, col2 = st.columns(2)
     
     with col1:
@@ -153,19 +160,26 @@ def render_dashboard():
         
     with col2:
         st.markdown('<p style="font-size:3.5vw; text-align:center; color:#5D9CEC; font-weight:bold; margin-bottom: 0;">TOTAL DAILY REVENUE</p>', unsafe_allow_html=True)
-        # Note: Revenue font is slightly smaller (10vw) so massive dollar amounts don't line-break
-        st.markdown(f'<p style="font-size:10vw; text-align:center; color:white; font-weight:900; line-height:1.2; margin: 0;">${total_revenue:,.0f}</p>', unsafe_allow_html=True)
+        st.markdown(f'<p style="font-size:10vw; text-align:center; color:white; font-weight:900; line-height:1.2; margin: 0;">${total_daily_revenue:,.0f}</p>', unsafe_allow_html=True)
         
-        progress_rev = min(total_revenue / REVENUE_GOAL, 1.0)
+        progress_rev = min(total_daily_revenue / REVENUE_GOAL, 1.0)
         st.progress(progress_rev)
-        st.markdown(f"<p style='text-align:center; color:#39FF14; font-size:2vw; font-weight:bold; margin-top: 1vw;'>Goal Progress: ${total_revenue:,.0f} / ${REVENUE_GOAL:,.0f}</p>", unsafe_allow_html=True)
+        st.markdown(f"<p style='text-align:center; color:#39FF14; font-size:2vw; font-weight:bold; margin-top: 1vw;'>Goal Progress: ${total_daily_revenue:,.0f} / ${REVENUE_GOAL:,.0f}</p>", unsafe_allow_html=True)
         
     sync_time = datetime.now(ZoneInfo("America/New_York")).strftime('%I:%M %p')
     st.markdown(f'<p style="text-align:center; color:#888888; font-size:1.5vw; margin-top: 2vw;">Last Update: {sync_time} EST</p>', unsafe_allow_html=True)
 
+    # --- MIDDLE ROW: TOTAL SEASONAL REVENUE ---
+    st.markdown('<p style="font-size:2.5vw; text-align:center; color:#5D9CEC; font-weight:bold; margin-bottom: 0; margin-top: 3vw;">TOTAL SEASON REVENUE</p>', unsafe_allow_html=True)
+    st.markdown(f'<p style="font-size:6vw; text-align:center; color:white; font-weight:900; line-height:1.0; margin: 0;">${total_season_revenue:,.0f}</p>', unsafe_allow_html=True)
+    
+    progress_season = min(total_season_revenue / SEASON_GOAL, 1.0)
+    st.progress(progress_season)
+    st.markdown(f"<p style='text-align:center; color:#39FF14; font-size:1.5vw; font-weight:bold; margin-top: 1vw;'>Goal Progress: ${total_season_revenue:,.0f} / ${SEASON_GOAL:,.0f}</p>", unsafe_allow_html=True)
+
     st.divider()
 
-    # --- CLIENT LIST (4 COLUMNS) ---
+    # --- BOTTOM ROW: CLIENT LIST (4 COLUMNS) ---
     if total_count > 0:
         cols = st.columns(4)
         for i, record in enumerate(records):
