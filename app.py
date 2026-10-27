@@ -13,10 +13,9 @@ SHEET_NAME = "Prepay Customers"
 COUNT_GOAL = 91
 REVENUE_GOAL = 80000.0
 
-# Fetch credentials from Streamlit Secrets
 GCP_CREDS = st.secrets.get("GCP_SERVICE_ACCOUNT")
 
-# --- 2. IPAD-OPTIMIZED CSS ---
+# --- 2. IPAD-OPTIMIZED CSS (MASSIVE TEXT) ---
 st.markdown("""
     <style>
         /* Force Black Background */
@@ -32,26 +31,29 @@ st.markdown("""
         header {visibility: hidden;}
         footer {visibility: hidden;}
         
-        /* Metric Typography */
-        .metric-title { font-size: 42px; text-align: center; color: white; font-weight: bold; margin-bottom: 5px; }
-        .metric-value { font-size: 42px; text-align: center; color: white; font-weight: 900; margin: 0; line-height: 1.2; }
-        .goal-text { font-size: 18px; text-align: center; color: #888888; margin-top: 10px; font-weight: bold;}
+        /* Massive Text Typography */
+        .metric-title { font-size: 3.5vw; text-align: center; color: #5D9CEC; font-weight: bold; margin-bottom: -2vw; }
+        .metric-value { font-size: 12vw; text-align: center; color: white; font-weight: 900; margin: 0; line-height: 1.1; }
+        .goal-text { font-size: 2.5vw; text-align: center; color: #39FF14; margin-top: 1vw; font-weight: bold;}
         
         /* Progress Bar Neon Color */
         .stProgress > div > div > div > div {
             background-color: #39FF14;
+            box-shadow: 0 0 15px #39FF14;
+            height: 25px;
+            border-radius: 10px;
         }
         
         /* Client List Styling */
         .client-card {
             background-color: rgba(255, 255, 255, 0.1);
-            padding: 10px;
+            padding: 1vw;
             border-radius: 8px;
-            margin-bottom: 10px;
+            margin-bottom: 1vw;
             border-left: 4px solid #39FF14;
         }
-        .client-name { font-size: 18px; color: white; font-weight: bold; margin: 0;}
-        .client-amount { font-size: 18px; color: #39FF14; margin: 0;}
+        .client-name { font-size: 1.5vw; color: white; font-weight: bold; margin: 0;}
+        .client-amount { font-size: 1.5vw; color: #39FF14; margin: 0;}
     </style>
 """, unsafe_allow_html=True)
 
@@ -60,7 +62,6 @@ st.markdown("""
 def get_gspread_client():
     if not GCP_CREDS: return None
     try:
-        # Check if GCP_CREDS is a string (JSON) or a dictionary (TOML parsed)
         if isinstance(GCP_CREDS, str):
             info = json.loads(GCP_CREDS)
         else:
@@ -84,7 +85,6 @@ def fetch_daily_prepays(client):
         if len(raw_data) < 3: 
             return []
 
-        # Determine "Business Date" (Switches over at 5 AM EST)
         now_est = datetime.now(ZoneInfo("America/New_York"))
         if now_est.hour < 5:
             report_date = (now_est - timedelta(days=1)).date()
@@ -155,17 +155,17 @@ def render_dashboard():
         st.markdown(f'<p class="metric-value">{total_count}</p>', unsafe_allow_html=True)
         progress_count = min(total_count / COUNT_GOAL, 1.0)
         st.progress(progress_count)
-        st.markdown(f'<p class="goal-text">Goal: {COUNT_GOAL}</p>', unsafe_allow_html=True)
+        st.markdown(f'<p class="goal-text">Goal Progress: {total_count} / {COUNT_GOAL}</p>', unsafe_allow_html=True)
         
     with col2:
         st.markdown('<p class="metric-title">TOTAL DAILY REVENUE</p>', unsafe_allow_html=True)
-        st.markdown(f'<p class="metric-value">${total_revenue:,.2f}</p>', unsafe_allow_html=True)
+        st.markdown(f'<p class="metric-value">${total_revenue:,.0f}</p>', unsafe_allow_html=True)
         progress_rev = min(total_revenue / REVENUE_GOAL, 1.0)
         st.progress(progress_rev)
-        st.markdown(f'<p class="goal-text">Goal: ${REVENUE_GOAL:,.0f}</p>', unsafe_allow_html=True)
+        st.markdown(f'<p class="goal-text">Goal Progress: ${total_revenue:,.0f} / ${REVENUE_GOAL:,.0f}</p>', unsafe_allow_html=True)
         
     sync_time = datetime.now(ZoneInfo("America/New_York")).strftime('%I:%M %p')
-    st.markdown(f'<p style="text-align:center; color:#666; font-size:16px; margin-top: 10px;">Last Update: {sync_time} EST</p>', unsafe_allow_html=True)
+    st.markdown(f'<p style="text-align:center; color:#888888; font-size:1.5vw; margin-top: 2vw;">Last Update: {sync_time} EST</p>', unsafe_allow_html=True)
 
     st.divider()
 
@@ -184,6 +184,6 @@ def render_dashboard():
                     </div>
                 """, unsafe_allow_html=True)
     else:
-        st.markdown("<h3 style='text-align: center; color: #888;'>No prepays logged for today yet.</h3>", unsafe_allow_html=True)
+        st.markdown("<h3 style='text-align: center; color: #888; font-size: 2vw;'>No prepays logged for today yet.</h3>", unsafe_allow_html=True)
 
 render_dashboard()
