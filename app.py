@@ -10,7 +10,7 @@ import os
 # --- 1. PAGE CONFIGURATION ---
 st.set_page_config(layout="wide", page_title="Prepay Dashboard", initial_sidebar_state="collapsed")
 
-SHEET_NAME = "Sales_Counter" # Update this to your actual spreadsheet name if different
+SHEET_NAME = "Prepay Customers" # Update this to your actual spreadsheet name if different
 GCP_CREDS = os.environ.get('gcp_service_account') or os.environ.get('GCP_SERVICE_ACCOUNT')
 
 # --- 2. IPAD-OPTIMIZED CSS ---
