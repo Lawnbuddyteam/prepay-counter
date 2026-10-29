@@ -10,7 +10,7 @@ import json
 st.set_page_config(layout="wide", page_title="Prepay Dashboard", initial_sidebar_state="collapsed")
 
 SHEET_NAME = "Prepay Customers" 
-COUNT_GOAL = 91
+COUNT_GOAL = 93
 REVENUE_GOAL = 80000.0
 SEASON_GOAL = 2000000.0
 
