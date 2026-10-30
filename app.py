@@ -79,10 +79,13 @@ def fetch_prepays_data(client):
         if len(raw_data) < 3: 
             return [], 0.0
 
+        # --- 5 AM EST RESET LOGIC ---
         now_est = datetime.now(ZoneInfo("America/New_York"))
         if now_est.hour < 5:
+            # Before 5 AM, pull yesterday's column
             report_date = (now_est - timedelta(days=1)).date()
         else:
+            # At 5 AM and after, pull today's column (Resetting the daily view)
             report_date = now_est.date()
 
         dates_row = raw_data[0]
@@ -91,14 +94,14 @@ def fetch_prepays_data(client):
         current_date_in_loop = None
         
         for col_idx in range(0, len(dates_row), 2):
-            date_val = dates_row[col_idx].strip()
+            date_val = dates_row[col_idx].strip() if col_idx < len(dates_row) else ""
             
             if date_val:
                 current_date_in_loop = date_val
                 
             try:
                 col_date = pd.to_datetime(current_date_in_loop).date()
-            except:
+            except Exception:
                 col_date = None
                 
             # Scan through rows to collect both daily and seasonal totals
@@ -108,23 +111,23 @@ def fetch_prepays_data(client):
                 name = row[col_idx].strip() if col_idx < len(row) else ""
                 amount_str = row[col_idx+1].strip() if col_idx+1 < len(row) else ""
                 
-                if name:
-                    clean_amount = amount_str.replace('$', '').replace(',', '').strip()
-                    try:
-                        amt_float = float(clean_amount)
-                    except ValueError:
-                        amt_float = 0.0
-                        
-                    # Add to seasonal total unconditionally
-                    total_season_revenue += amt_float
-                        
-                    # Add to daily display only if it matches today's date
-                    if col_date == report_date:
-                        daily_records.append({
-                            "Name": name, 
-                            "Amount": amt_float, 
-                            "AmountStr": amount_str
-                        })
+                # --- EXTRACT NUMBERS UNCONDITIONALLY FOR THE $2M GOAL ---
+                clean_amount = amount_str.replace('$', '').replace(',', '').strip()
+                try:
+                    amt_float = float(clean_amount)
+                except ValueError:
+                    amt_float = 0.0
+                    
+                # Add to seasonal total regardless of whether a "Name" was typed in
+                total_season_revenue += amt_float
+                    
+                # Add to daily display only if it matches today's date AND has a name
+                if name and amt_float > 0 and col_date == report_date:
+                    daily_records.append({
+                        "Name": name, 
+                        "Amount": amt_float, 
+                        "AmountStr": amount_str
+                    })
                         
         return daily_records, total_season_revenue
     except Exception as e:
@@ -133,7 +136,8 @@ def fetch_prepays_data(client):
 
 # --- 4. LIVE DASHBOARD RENDERING ---
 now_est = datetime.now(ZoneInfo("America/New_York"))
-refresh_rate = 120 if 6 <= now_est.hour < 20 else 3600 
+# Set a consistent 120-second (2 minute) refresh rate so it catches the 5 AM rollover quickly
+refresh_rate = 120 
 
 @st.fragment(run_every=refresh_rate)
 def render_dashboard():
