@@ -104,11 +104,9 @@ def fetch_prepays_data(client):
             except Exception:
                 col_date = None
                 
-            # Scan through rows to collect both daily and seasonal totals
-            for row_idx in range(2, len(raw_data)):
-                # --- EXCLUDE SPREADSHEET ROW 43 (Index 42) ---
-                if row_idx == 42:
-                    continue
+            # --- ONLY PROCESS ROWS 3 THROUGH 42 (Indices 2 through 41) ---
+            max_row = min(42, len(raw_data))
+            for row_idx in range(2, max_row):
                 
                 row = raw_data[row_idx]
                 
