@@ -11,7 +11,7 @@ st.set_page_config(layout="wide", page_title="Prepay Dashboard", initial_sidebar
 
 SHEET_NAME = "Prepay Customers" 
 COUNT_GOAL = 93
-REVENUE_GOAL = 80000.0
+REVENUE_GOAL = 91000.0
 SEASON_GOAL = 2000000.0
 
 GCP_CREDS = st.secrets.get("GCP_SERVICE_ACCOUNT")
