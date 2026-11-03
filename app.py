@@ -72,20 +72,23 @@ def get_gspread_client():
         st.error(f"Auth Error: {e}")
         return None
 
-def fetch_prepays_data(client):
+# The underscore in _client tells Streamlit not to hash the gspread connection
+@st.cache_data(ttl=120)
+def fetch_prepays_data(_client):
     try:
-        sheet = client.open(SHEET_NAME).worksheet("2027")
-        raw_data = sheet.get_all_values()
+        sheet = _client.open(SHEET_NAME).worksheet("2027")
+        
+        # Only download the first 42 rows (Columns A through ZZ)
+        raw_data = sheet.get("A1:ZZ42") 
+        
         if len(raw_data) < 3: 
             return [], 0.0, 0
 
         # --- 5 AM EST RESET LOGIC ---
         now_est = datetime.now(ZoneInfo("America/New_York"))
         if now_est.hour < 5:
-            # Before 5 AM, pull yesterday's column
             report_date = (now_est - timedelta(days=1)).date()
         else:
-            # At 5 AM and after, pull today's column (Resetting the daily view)
             report_date = now_est.date()
 
         dates_row = raw_data[0]
@@ -105,7 +108,7 @@ def fetch_prepays_data(client):
             except Exception:
                 col_date = None
                 
-            # --- ONLY PROCESS ROWS 3 THROUGH 42 (Indices 2 through 41) ---
+            # Loop stops safely before hitting out of bounds
             max_row = min(42, len(raw_data))
             for row_idx in range(2, max_row):
                 
@@ -114,21 +117,17 @@ def fetch_prepays_data(client):
                 name = row[col_idx].strip() if col_idx < len(row) else ""
                 amount_str = row[col_idx+1].strip() if col_idx+1 < len(row) else ""
                 
-                # --- EXTRACT NUMBERS UNCONDITIONALLY FOR THE $2M GOAL ---
                 clean_amount = amount_str.replace('$', '').replace(',', '').strip()
                 try:
                     amt_float = float(clean_amount)
                 except ValueError:
                     amt_float = 0.0
                     
-                # Add to seasonal total regardless of whether a "Name" was typed in
                 total_season_revenue += amt_float
                 
-                # Increment total season count for valid client payments
                 if name and amt_float > 0:
                     total_season_count += 1
                     
-                # Add to daily display only if it matches today's date AND has a name
                 if name and amt_float > 0 and col_date == report_date:
                     daily_records.append({
                         "Name": name, 
