@@ -109,19 +109,14 @@ def fetch_prepays_data(_client):
                     pass
         
         # --- 2. DAILY METRICS & SEASON COUNT (Rows 3-42) ---
-        # Find the absolute maximum width of the sheet to prevent early cutoff
         max_cols = max(len(row) for row in raw_data)
-        current_date_in_loop = None
         
-        # Loop up to max_cols instead of len(dates_row)
         for col_idx in range(0, max_cols, 2):
-            date_val = dates_row[col_idx].strip() if col_idx < len(dates_row) else ""
+            # Strictly use the explicit date written in this column's row 1
+            date_str = dates_row[col_idx].strip() if col_idx < len(dates_row) else ""
             
-            if date_val:
-                current_date_in_loop = date_val
-                
             try:
-                col_date = pd.to_datetime(current_date_in_loop).date()
+                col_date = pd.to_datetime(date_str).date()
             except Exception:
                 col_date = None
                 
@@ -131,7 +126,6 @@ def fetch_prepays_data(_client):
             for row_idx in range(2, max_row):
                 row = raw_data[row_idx]
                 
-                # Safely pull name and amount, defaulting to blank if cell doesn't exist
                 name = row[col_idx].strip() if col_idx < len(row) else ""
                 amount_str = row[col_idx+1].strip() if col_idx+1 < len(row) else ""
                 
@@ -145,7 +139,7 @@ def fetch_prepays_data(_client):
                 if name and amt_float > 0:
                     total_season_count += 1
                     
-                # Add to daily display only if it matches today's date
+                # Add to daily display ONLY if this specific column matches today's date
                 if name and amt_float > 0 and col_date == report_date:
                     daily_records.append({
                         "Name": name, 
