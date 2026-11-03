@@ -170,7 +170,7 @@ def render_dashboard():
         st.progress(progress_count)
         st.markdown(f"<p style='text-align:center; color:#39FF14; font-size:2vw; font-weight:bold; margin-top: 1vw;'>Goal Progress: {total_count} / {COUNT_GOAL}</p>", unsafe_allow_html=True)
         # Added Season Count and Prepay Client %
-        st.markdown(f"<p style='text-align:center; color:#888888; font-size:1.2vw; font-weight:bold; margin-top: 0.5vw;'>Season Count: {total_season_count} &nbsp;|&nbsp; Prepay Client % of Total Clients: {prepay_client_pct}%</p>", unsafe_allow_html=True)
+        st.markdown(f"<p style='text-align:center; color:#888888; font-size:1.2vw; font-weight:bold; margin-top: 0.75vw;'>Season Count: {total_season_count} &nbsp;|&nbsp; Prepay Client % of Total Clients: {prepay_client_pct}%</p>", unsafe_allow_html=True)
         
     with col2:
         st.markdown('<p style="font-size:3.5vw; text-align:center; color:#5D9CEC; font-weight:bold; margin-bottom: 0;">TOTAL DAILY REVENUE</p>', unsafe_allow_html=True)
