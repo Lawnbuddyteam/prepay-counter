@@ -78,8 +78,8 @@ def fetch_prepays_data(_client):
     try:
         sheet = _client.open(SHEET_NAME).worksheet("2027")
         
-        # Only download the first 42 rows (Columns A through ZZ)
-        raw_data = sheet.get("A1:ZZ42") 
+        # Download rows 1 through 43
+        raw_data = sheet.get("A1:ZZ43") 
         
         if len(raw_data) < 3: 
             return [], 0.0, 0
@@ -93,8 +93,23 @@ def fetch_prepays_data(_client):
 
         dates_row = raw_data[0]
         daily_records = []
-        total_season_revenue = 0.0
         total_season_count = 0
+        
+        # --- 1. TOTAL SEASON REVENUE (Summing Row 43) ---
+        total_season_revenue = 0.0
+        # Check if row 43 exists in the returned data (index 42)
+        if len(raw_data) >= 43:
+            row_43 = raw_data[42]
+            for cell in row_43:
+                clean_cell = str(cell).replace('$', '').replace(',', '').strip()
+                try:
+                    val = float(clean_cell)
+                    if val > 0:
+                        total_season_revenue += val
+                except ValueError:
+                    pass
+        
+        # --- 2. DAILY METRICS & SEASON COUNT (Rows 3-42) ---
         current_date_in_loop = None
         
         for col_idx in range(0, len(dates_row), 2):
@@ -108,10 +123,11 @@ def fetch_prepays_data(_client):
             except Exception:
                 col_date = None
                 
-            # Loop stops safely before hitting out of bounds
+            # Stop before hitting row 43 (max_row handles cases where sheet is shorter)
             max_row = min(42, len(raw_data))
+            
+            # Loop exactly Rows 3 through 42 (Indices 2 through 41)
             for row_idx in range(2, max_row):
-                
                 row = raw_data[row_idx]
                 
                 name = row[col_idx].strip() if col_idx < len(row) else ""
@@ -123,11 +139,11 @@ def fetch_prepays_data(_client):
                 except ValueError:
                     amt_float = 0.0
                     
-                total_season_revenue += amt_float
-                
+                # Increment total season count for valid client entries
                 if name and amt_float > 0:
                     total_season_count += 1
                     
+                # Add to daily display if it matches today's date
                 if name and amt_float > 0 and col_date == report_date:
                     daily_records.append({
                         "Name": name, 
