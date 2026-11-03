@@ -77,7 +77,7 @@ def fetch_prepays_data(client):
         sheet = client.open(SHEET_NAME).worksheet("2027")
         raw_data = sheet.get_all_values()
         if len(raw_data) < 3: 
-            return [], 0.0
+            return [], 0.0, 0
 
         # --- 5 AM EST RESET LOGIC ---
         now_est = datetime.now(ZoneInfo("America/New_York"))
@@ -91,6 +91,7 @@ def fetch_prepays_data(client):
         dates_row = raw_data[0]
         daily_records = []
         total_season_revenue = 0.0
+        total_season_count = 0
         current_date_in_loop = None
         
         for col_idx in range(0, len(dates_row), 2):
@@ -122,6 +123,10 @@ def fetch_prepays_data(client):
                     
                 # Add to seasonal total regardless of whether a "Name" was typed in
                 total_season_revenue += amt_float
+                
+                # Increment total season count for valid client payments
+                if name and amt_float > 0:
+                    total_season_count += 1
                     
                 # Add to daily display only if it matches today's date AND has a name
                 if name and amt_float > 0 and col_date == report_date:
@@ -131,10 +136,10 @@ def fetch_prepays_data(client):
                         "AmountStr": amount_str
                     })
                         
-        return daily_records, total_season_revenue
+        return daily_records, total_season_revenue, total_season_count
     except Exception as e:
         st.error(f"Data Fetch Error: {e}")
-        return [], 0.0
+        return [], 0.0, 0
 
 # --- 4. LIVE DASHBOARD RENDERING ---
 now_est = datetime.now(ZoneInfo("America/New_York"))
@@ -148,10 +153,11 @@ def render_dashboard():
         st.warning("⚠️ Waiting for Google Sheets connection...")
         return
 
-    records, total_season_revenue = fetch_prepays_data(client)
+    records, total_season_revenue, total_season_count = fetch_prepays_data(client)
     
     total_count = len(records)
     total_daily_revenue = sum(r["Amount"] for r in records)
+    prepay_client_pct = round((total_season_count / 8475) * 100)
     
     # --- TOP ROW: DAILY METRICS ---
     col1, col2 = st.columns(2)
@@ -163,6 +169,8 @@ def render_dashboard():
         progress_count = min(total_count / COUNT_GOAL, 1.0)
         st.progress(progress_count)
         st.markdown(f"<p style='text-align:center; color:#39FF14; font-size:2vw; font-weight:bold; margin-top: 1vw;'>Goal Progress: {total_count} / {COUNT_GOAL}</p>", unsafe_allow_html=True)
+        # Added Season Count and Prepay Client %
+        st.markdown(f"<p style='text-align:center; color:#888888; font-size:1.2vw; font-weight:bold; margin-top: 0.5vw;'>Season Count: {total_season_count} &nbsp;|&nbsp; Prepay Client % of Total Clients: {prepay_client_pct}%</p>", unsafe_allow_html=True)
         
     with col2:
         st.markdown('<p style="font-size:3.5vw; text-align:center; color:#5D9CEC; font-weight:bold; margin-bottom: 0;">TOTAL DAILY REVENUE</p>', unsafe_allow_html=True)
