@@ -168,7 +168,7 @@ def render_dashboard():
     
     total_count = len(records)
     total_daily_revenue = sum(r["Amount"] for r in records)
-    prepay_client_pct = round((total_season_count / 8475) * 100)
+    prepay_client_pct = round((total_season_count / 8468) * 100)
     
     # --- TOP ROW: DAILY METRICS ---
     col1, col2 = st.columns(2)
