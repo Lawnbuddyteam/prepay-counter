@@ -93,7 +93,9 @@ def fetch_prepays_data(_client):
 
         dates_row = raw_data[0]
         daily_records = []
-        total_season_count = 0
+        
+        # Use a set to automatically filter out duplicate names
+        unique_clients = set()
         
         # --- 1. TOTAL SEASON REVENUE (Summing Row 43) ---
         total_season_revenue = 0.0
@@ -135,9 +137,9 @@ def fetch_prepays_data(_client):
                 except ValueError:
                     amt_float = 0.0
                     
-                # Increment total season count for valid client entries across ALL days
+                # Add valid clients to the unique set (lowercase to prevent case-sensitive duplicates)
                 if name and amt_float > 0:
-                    total_season_count += 1
+                    unique_clients.add(name.lower())
                     
                 # Add to daily display ONLY if this specific column matches today's date
                 if name and amt_float > 0 and col_date == report_date:
@@ -146,8 +148,11 @@ def fetch_prepays_data(_client):
                         "Amount": amt_float, 
                         "AmountStr": amount_str
                     })
-                        
+        
+        # The season count is simply the number of unique names in the set
+        total_season_count = len(unique_clients)
         return daily_records, total_season_revenue, total_season_count
+        
     except Exception as e:
         st.error(f"Data Fetch Error: {e}")
         return [], 0.0, 0
