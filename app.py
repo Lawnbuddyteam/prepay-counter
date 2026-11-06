@@ -9,7 +9,7 @@ import json
 # --- 1. PAGE CONFIGURATION ---
 st.set_page_config(layout="wide", page_title="Prepay Dashboard", initial_sidebar_state="collapsed")
 
-SHEET_NAME = "Prepay Customers" 
+SHEET_NAME = "Prepay Customers"
 COUNT_GOAL = 93
 REVENUE_GOAL = 91000.0
 SEASON_GOAL = 2000000.0
@@ -175,6 +175,9 @@ def render_dashboard():
     total_daily_revenue = sum(r["Amount"] for r in records)
     prepay_client_pct = round((total_season_count / 8450) * 100)
     
+    # Calculate the Daily Average (handling division by zero)
+    daily_avg = (total_daily_revenue / total_count) if total_count > 0 else 0.0
+    
     # --- TOP ROW: DAILY METRICS ---
     col1, col2 = st.columns(2)
     
@@ -195,6 +198,8 @@ def render_dashboard():
         progress_rev = min(total_daily_revenue / REVENUE_GOAL, 1.0)
         st.progress(progress_rev)
         st.markdown(f"<p style='text-align:center; color:#39FF14; font-size:2vw; font-weight:bold; margin-top: 1vw;'>Goal Progress: ${total_daily_revenue:,.0f} / ${REVENUE_GOAL:,.0f}</p>", unsafe_allow_html=True)
+        # Added Daily Avg and 10/30/26 Avg
+        st.markdown(f"<p style='text-align:center; color:#888888; font-size:1.6vw; font-weight:bold; margin-top: 0.5vw;'>Daily Avg: ${daily_avg:,.0f} &nbsp;|&nbsp; 10/30/26 Avg: $680</p>", unsafe_allow_html=True)
         
     sync_time = datetime.now(ZoneInfo("America/New_York")).strftime('%I:%M %p')
     st.markdown(f'<p style="text-align:center; color:#888888; font-size:1.5vw; margin-top: 2vw;">Last Update: {sync_time} EST</p>', unsafe_allow_html=True)
