@@ -173,7 +173,7 @@ def render_dashboard():
     
     total_count = len(records)
     total_daily_revenue = sum(r["Amount"] for r in records)
-    prepay_client_pct = round((total_season_count / 8450) * 100)
+    prepay_client_pct = round((total_season_count / 8437) * 100)
     
     # Calculate the Daily Average (handling division by zero)
     daily_avg = (total_daily_revenue / total_count) if total_count > 0 else 0.0
