@@ -202,7 +202,7 @@ def render_dashboard():
         st.markdown(f"<p style='text-align:center; color:#39FF14; font-size:2vw; font-weight:bold; margin-top: 1vw;'>Goal Progress: ${total_daily_revenue:,.0f} / ${REVENUE_GOAL:,.0f}</p>", unsafe_allow_html=True)
         
         # Updated Rolling Avg display using Season Count
-        st.markdown(f"<p style='text-align:center; color:#888888; font-size:1.6vw; font-weight:bold; margin-top: 0.5vw;'>Daily Avg: ${daily_avg:,.0f} &nbsp;|&nbsp; Rolling Avg: ${rolling_avg:,.0f}</p>", unsafe_allow_html=True)
+        st.markdown(f"<p style='text-align:center; color:#888888; font-size:1.6vw; font-weight:bold; margin-top: 0.5vw;'>Daily Avg: ${daily_avg:,.0f} &nbsp;|&nbsp; Season Avg: ${rolling_avg:,.0f}</p>", unsafe_allow_html=True)
         
     sync_time = datetime.now(ZoneInfo("America/New_York")).strftime('%I:%M %p')
     st.markdown(f'<p style="text-align:center; color:#888888; font-size:1.5vw; margin-top: 2vw;">Last Update: {sync_time} EST</p>', unsafe_allow_html=True)
