@@ -82,7 +82,7 @@ def fetch_prepays_data(_client):
         raw_data = sheet.get("A1:ZZ43") 
         
         if len(raw_data) < 3: 
-            return [], 0.0, 0
+            return [], 0.0, 0, 0
 
         # --- 5 AM EST RESET LOGIC ---
         now_est = datetime.now(ZoneInfo("America/New_York"))
@@ -94,8 +94,9 @@ def fetch_prepays_data(_client):
         dates_row = raw_data[0]
         daily_records = []
         
-        # Use a set to automatically filter out duplicate names
+        # Use a set to automatically filter out duplicate names and dates
         unique_clients = set()
+        unique_dates = set()
         
         # --- 1. TOTAL SEASON REVENUE (Summing Row 43) ---
         total_season_revenue = 0.0
@@ -119,6 +120,8 @@ def fetch_prepays_data(_client):
             
             try:
                 col_date = pd.to_datetime(date_str).date()
+                if col_date:
+                    unique_dates.add(col_date)
             except Exception:
                 col_date = None
                 
@@ -151,11 +154,13 @@ def fetch_prepays_data(_client):
         
         # The season count is simply the number of unique names in the set
         total_season_count = len(unique_clients)
-        return daily_records, total_season_revenue, total_season_count
+        total_unique_dates = len(unique_dates)
+        
+        return daily_records, total_season_revenue, total_season_count, total_unique_dates
         
     except Exception as e:
         st.error(f"Data Fetch Error: {e}")
-        return [], 0.0, 0
+        return [], 0.0, 0, 0
 
 # --- 4. LIVE DASHBOARD RENDERING ---
 now_est = datetime.now(ZoneInfo("America/New_York"))
@@ -169,14 +174,15 @@ def render_dashboard():
         st.warning("⚠️ Waiting for Google Sheets connection...")
         return
 
-    records, total_season_revenue, total_season_count = fetch_prepays_data(client)
+    records, total_season_revenue, total_season_count, total_unique_dates = fetch_prepays_data(client)
     
     total_count = len(records)
     total_daily_revenue = sum(r["Amount"] for r in records)
     prepay_client_pct = round((total_season_count / 8420) * 100)
     
-    # Calculate the Daily Average (handling division by zero)
+    # Calculate the Averages (handling division by zero)
     daily_avg = (total_daily_revenue / total_count) if total_count > 0 else 0.0
+    rolling_avg = (total_season_revenue / total_unique_dates) if total_unique_dates > 0 else 0.0
     
     # --- TOP ROW: DAILY METRICS ---
     col1, col2 = st.columns(2)
@@ -188,7 +194,7 @@ def render_dashboard():
         progress_count = min(total_count / COUNT_GOAL, 1.0)
         st.progress(progress_count)
         st.markdown(f"<p style='text-align:center; color:#39FF14; font-size:2vw; font-weight:bold; margin-top: 1vw;'>Goal Progress: {total_count} / {COUNT_GOAL}</p>", unsafe_allow_html=True)
-        # Added Season Count and Prepay Client %
+        
         st.markdown(f"<p style='text-align:center; color:#888888; font-size:1.6vw; font-weight:bold; margin-top: 0.5vw;'>Season Count: {total_season_count} &nbsp;|&nbsp; Prepay Client % of Total Clients: {prepay_client_pct}%</p>", unsafe_allow_html=True)
         
     with col2:
@@ -198,8 +204,9 @@ def render_dashboard():
         progress_rev = min(total_daily_revenue / REVENUE_GOAL, 1.0)
         st.progress(progress_rev)
         st.markdown(f"<p style='text-align:center; color:#39FF14; font-size:2vw; font-weight:bold; margin-top: 1vw;'>Goal Progress: ${total_daily_revenue:,.0f} / ${REVENUE_GOAL:,.0f}</p>", unsafe_allow_html=True)
-        # Added Daily Avg and 10/30/26 Avg
-        st.markdown(f"<p style='text-align:center; color:#888888; font-size:1.6vw; font-weight:bold; margin-top: 0.5vw;'>Daily Avg: ${daily_avg:,.0f} &nbsp;|&nbsp; 10/30/26 Avg: $680</p>", unsafe_allow_html=True)
+        
+        # Updated Rolling Avg display
+        st.markdown(f"<p style='text-align:center; color:#888888; font-size:1.6vw; font-weight:bold; margin-top: 0.5vw;'>Daily Avg: ${daily_avg:,.0f} &nbsp;|&nbsp; Rolling Avg: ${rolling_avg:,.0f}</p>", unsafe_allow_html=True)
         
     sync_time = datetime.now(ZoneInfo("America/New_York")).strftime('%I:%M %p')
     st.markdown(f'<p style="text-align:center; color:#888888; font-size:1.5vw; margin-top: 2vw;">Last Update: {sync_time} EST</p>', unsafe_allow_html=True)
