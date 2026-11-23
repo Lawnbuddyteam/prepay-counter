@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import gspread
-from oauth2client.service_account import ServiceAccountCredentials
+import traceback
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 import json
@@ -54,26 +54,24 @@ st.markdown("""
 # --- 3. CORE FUNCTIONS ---
 @st.cache_resource(ttl=1800)
 def get_gspread_client():
-    if not GCP_CREDS: return None
+    if not GCP_CREDS:
+        return None
     try:
         if isinstance(GCP_CREDS, str):
             info = json.loads(GCP_CREDS)
         else:
             info = dict(GCP_CREDS)
-            
-        if 'private_key' in info:
-            info['private_key'] = info['private_key'].replace('\\n', '\n')
-            
-        creds = ServiceAccountCredentials.from_json_keyfile_dict(
-            info, ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-        )
-        return gspread.authorize(creds)
+
+        if "private_key" in info:
+            info["private_key"] = info["private_key"].replace("\\n", "\n")
+
+        return gspread.service_account_from_dict(info)
     except Exception as e:
-        st.error(f"Auth Error: {e}")
+        st.error(f"Auth Error: {type(e).__name__}: {e}")
         return None
 
 # The underscore in _client tells Streamlit not to hash the gspread connection
-@st.cache_data(ttl=120)
+#@st.cache_data(ttl=120)
 def fetch_prepays_data(_client):
     try:
         sheet = _client.open(SHEET_NAME).worksheet("2027")
@@ -170,7 +168,12 @@ def render_dashboard():
         st.warning("⚠️ Waiting for Google Sheets connection...")
         return
 
-    records, total_season_revenue, total_season_count = fetch_prepays_data(client)
+    try:
+        records, total_season_revenue, total_season_count = fetch_prepays_data(client)
+    except Exception as e:
+        st.error(f"Data Fetch Error ({type(e).__name__}): {repr(e)}")
+        st.code(traceback.format_exc(), language="text")
+        return
     
     total_count = len(records)
     total_daily_revenue = sum(r["Amount"] for r in records)
