@@ -72,88 +72,86 @@ def get_gspread_client():
 
 # The underscore in _client tells Streamlit not to hash the gspread connection
 #@st.cache_data(ttl=120)
-    def fetch_prepays_data(_client):
-        sheet = _client.open_by_key(SHEET_ID).worksheet("2027")
+    # The underscore in _client tells Streamlit not to hash the gspread connection
+#@st.cache_data(ttl=120)
+def fetch_prepays_data(_client):
+    sheet = _client.open_by_key(SHEET_ID).worksheet("2027")
 
-        # Download rows 1 through 43 across all columns
-        raw_data = sheet.get("1:43")
-        
-        if len(raw_data) < 3: 
-            return [], 0.0, 0
+    # Download rows 1 through 43 across all columns
+    raw_data = sheet.get("1:43")
+    
+    if len(raw_data) < 3: 
+        return [], 0.0, 0
 
-        # --- 5 AM EST RESET LOGIC ---
-        now_est = datetime.now(ZoneInfo("America/New_York"))
-        if now_est.hour < 5:
-            report_date = (now_est - timedelta(days=1)).date()
-        else:
-            report_date = now_est.date()
+    # --- 5 AM EST RESET LOGIC ---
+    now_est = datetime.now(ZoneInfo("America/New_York"))
+    if now_est.hour < 5:
+        report_date = (now_est - timedelta(days=1)).date()
+    else:
+        report_date = now_est.date()
 
-        dates_row = raw_data[0]
-        daily_records = []
-        
-        # Use a set to automatically filter out duplicate names
-        unique_clients = set()
-        
-        # --- 1. TOTAL SEASON REVENUE (Summing Row 43) ---
-        total_season_revenue = 0.0
-        if len(raw_data) >= 43:
-            row_43 = raw_data[42]
-            for cell in row_43:
-                clean_cell = str(cell).replace('$', '').replace(',', '').strip()
-                try:
-                    val = float(clean_cell)
-                    if val > 0:
-                        total_season_revenue += val
-                except ValueError:
-                    pass
-        
-        # --- 2. DAILY METRICS & SEASON COUNT (Rows 3-42) ---
-        max_cols = max(len(row) for row in raw_data)
-        
-        for col_idx in range(0, max_cols, 2):
-            # Strictly use the explicit date written in this column's row 1
-            date_str = dates_row[col_idx].strip() if col_idx < len(dates_row) else ""
-            
+    dates_row = raw_data[0]
+    daily_records = []
+    
+    # Use a set to automatically filter out duplicate names
+    unique_clients = set()
+    
+    # --- 1. TOTAL SEASON REVENUE (Summing Row 43) ---
+    total_season_revenue = 0.0
+    if len(raw_data) >= 43:
+        row_43 = raw_data[42]
+        for cell in row_43:
+            clean_cell = str(cell).replace('$', '').replace(',', '').strip()
             try:
-                col_date = pd.to_datetime(date_str).date()
-            except Exception:
-                col_date = None
-                
-            max_row = min(42, len(raw_data))
+                val = float(clean_cell)
+                if val > 0:
+                    total_season_revenue += val
+            except ValueError:
+                pass
+    
+    # --- 2. DAILY METRICS & SEASON COUNT (Rows 3-42) ---
+    max_cols = max(len(row) for row in raw_data)
+    
+    for col_idx in range(0, max_cols, 2):
+        # Strictly use the explicit date written in this column's row 1
+        date_str = dates_row[col_idx].strip() if col_idx < len(dates_row) else ""
+        
+        try:
+            col_date = pd.to_datetime(date_str).date()
+        except Exception:
+            col_date = None
             
-            # Loop exactly Rows 3 through 42 (Indices 2 through 41)
-            for row_idx in range(2, max_row):
-                row = raw_data[row_idx]
+        max_row = min(42, len(raw_data))
+        
+        # Loop exactly Rows 3 through 42 (Indices 2 through 41)
+        for row_idx in range(2, max_row):
+            row = raw_data[row_idx]
+            
+            name = row[col_idx].strip() if col_idx < len(row) else ""
+            amount_str = row[col_idx+1].strip() if col_idx+1 < len(row) else ""
+            
+            clean_amount = amount_str.replace('$', '').replace(',', '').strip()
+            try:
+                amt_float = float(clean_amount)
+            except ValueError:
+                amt_float = 0.0
                 
-                name = row[col_idx].strip() if col_idx < len(row) else ""
-                amount_str = row[col_idx+1].strip() if col_idx+1 < len(row) else ""
+            # Add valid clients to the unique set (lowercase to prevent case-sensitive duplicates)
+            if name and amt_float > 0:
+                unique_clients.add(name.lower())
                 
-                clean_amount = amount_str.replace('$', '').replace(',', '').strip()
-                try:
-                    amt_float = float(clean_amount)
-                except ValueError:
-                    amt_float = 0.0
-                    
-                # Add valid clients to the unique set (lowercase to prevent case-sensitive duplicates)
-                if name and amt_float > 0:
-                    unique_clients.add(name.lower())
-                    
-                # Add to daily display ONLY if this specific column matches today's date
-                if name and amt_float > 0 and col_date == report_date:
-                    daily_records.append({
-                        "Name": name, 
-                        "Amount": amt_float, 
-                        "AmountStr": amount_str
-                    })
-        
-        # The season count is simply the number of unique names in the set
-        total_season_count = len(unique_clients)
-        
-        return daily_records, total_season_revenue, total_season_count
-        
-        except Exception as e:
-            st.error(f"Data Fetch Error: {e}")
-            return [], 0.0, 0
+            # Add to daily display ONLY if this specific column matches today's date
+            if name and amt_float > 0 and col_date == report_date:
+                daily_records.append({
+                    "Name": name, 
+                    "Amount": amt_float, 
+                    "AmountStr": amount_str
+                })
+    
+    # The season count is simply the number of unique names in the set
+    total_season_count = len(unique_clients)
+    
+    return daily_records, total_season_revenue, total_season_count
 
 # --- 4. LIVE DASHBOARD RENDERING ---
 now_est = datetime.now(ZoneInfo("America/New_York"))
