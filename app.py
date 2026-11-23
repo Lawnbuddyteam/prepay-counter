@@ -151,9 +151,9 @@ def get_gspread_client():
         
         return daily_records, total_season_revenue, total_season_count
         
-    except Exception as e:
-        st.error(f"Data Fetch Error: {e}")
-        return [], 0.0, 0
+        except Exception as e:
+            st.error(f"Data Fetch Error: {e}")
+            return [], 0.0, 0
 
 # --- 4. LIVE DASHBOARD RENDERING ---
 now_est = datetime.now(ZoneInfo("America/New_York"))
