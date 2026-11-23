@@ -72,11 +72,11 @@ def get_gspread_client():
 
 # The underscore in _client tells Streamlit not to hash the gspread connection
 #@st.cache_data(ttl=120)
-def fetch_prepays_data(_client):
-    sheet = _client.open_by_key(SHEET_ID).worksheet("2027")
+    def fetch_prepays_data(_client):
+        sheet = _client.open_by_key(SHEET_ID).worksheet("2027")
 
-    # Download rows 1 through 43 across all columns
-    raw_data = sheet.get("1:43")
+        # Download rows 1 through 43 across all columns
+        raw_data = sheet.get("1:43")
         
         if len(raw_data) < 3: 
             return [], 0.0, 0
