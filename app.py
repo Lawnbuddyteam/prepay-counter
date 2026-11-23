@@ -9,7 +9,7 @@ import json
 # --- 1. PAGE CONFIGURATION ---
 st.set_page_config(layout="wide", page_title="Prepay Dashboard", initial_sidebar_state="collapsed")
 
-SHEET_ID = "847152692"
+SHEET_ID = "1geiY9AJNdF1gGvAUuQZneJPfoxx3SfF2H-Z_fZWOtF8"
 COUNT_GOAL = 93
 REVENUE_GOAL = 91000.0
 SEASON_GOAL = 2000000.0
@@ -73,11 +73,10 @@ def get_gspread_client():
 # The underscore in _client tells Streamlit not to hash the gspread connection
 #@st.cache_data(ttl=120)
 def fetch_prepays_data(_client):
-    try:
-        sheet = _client.open_by_key("1:43")
-        
-        # Download rows 1 through 43
-        raw_data = sheet.get("A1:ZZ43") 
+    sheet = _client.open_by_key(SHEET_ID).worksheet("2027")
+
+    # Download rows 1 through 43 across all columns
+    raw_data = sheet.get("1:43")
         
         if len(raw_data) < 3: 
             return [], 0.0, 0
