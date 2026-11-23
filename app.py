@@ -74,7 +74,7 @@ def get_gspread_client():
 #@st.cache_data(ttl=120)
 def fetch_prepays_data(_client):
     try:
-        sheet = _client.open(SHEET_NAME).worksheet("2027")
+        sheet = _client.open_by_key("1:43")
         
         # Download rows 1 through 43
         raw_data = sheet.get("A1:ZZ43") 
